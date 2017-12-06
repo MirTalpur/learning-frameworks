@@ -1,0 +1,630 @@
+resource 'NAME' do
+  parameter1   value1
+  parameter2   value2
+end
+
+The first part is the name of the resource such as (template, package, or service)
+
+Chef Examples:
+template '/etc/resolv.conf' do
+  source 'my_resolv.conf.erb'
+  owner  'root'
+  group  'root'
+  mode   '0644'
+end
+
+package 'ntp' do
+  action :upgrade
+end
+
+service 'apache2' do
+  restart_command 'etc/init.d/apache2 restart'
+end
+
+Using loops in chef code:
+['bacon','eggs','sausage'].each do |type|
+  file "tmp/#{type}" do
+    content "#{type} is delicious!"
+  end
+end
+
+Dynamically calculating a value (such as total memory on a target node) those values are chached and stored during the first phase of execution
+
+Chef uses (DSL) domain specific lanaguage for short
+
+This will be computed during the first phase of execution:
+
+free_memory = node['memory']['total']
+
+file '/tmp/free' do
+  contents "#{free_memory} bytes free on #{Time.now}"
+end
+
+Second phase of evaluation the resource contained in the resource list will be:
+file '/tmp/free' do
+  contents "12343242 bytes free on 2013-07-24 23:41:01 -0400"
+end
+
+The core of Chef has the following resources:
+file resource
+template resource
+service resource
+package resource
+
+Common used Chef resources:
+bash
+ex:
+bash 'echo hello'
+
+chef_gem (install a gem inside chef, for use inside chef, useful when a chef code requires a gem to perform a function)
+ex:
+chef_gem 'httparty'
+
+cron
+ex:
+cron 'weekly_restart' do
+  weekday '1'
+  minute  '0'
+  hour    '0'
+  command 'sudo reboot'
+end
+
+deploy_revision (control and manage a deployment of code from source control)
+ex:
+deploy_revision 'opt/my_app' do
+  repo  'git://github.com/username/app.git'
+end
+
+directory (manage a dir or dir tree, handling permissions and ownership)
+directory 'opt/my/deep/directory' do
+  owner     'root'
+  group     'root'
+  mode      '0644'
+  recursive  true
+end
+
+exectue (Execute an arbritrary one-line command as if it were entered on the command line)
+execute 'write status' do
+  command 'echo "delicious' > /tmp/bacon'
+end
+
+file (manage a file already presnet (but not already manage by CHef))
+file 'tmp/bacon' do
+  action :delete
+end
+
+gem_package (install a gem for use outside of Chef)
+gem_package 'bundler'
+
+
+group (create or manage a local group definition with local user accounts as members)
+group 'bacon'
+
+link (create and manage symlinks and hard links)
+link '/tmp/bacon' do
+  to '/tmp/delicious'
+end
+
+mount (mount or unmount a file system)
+mount '/dev/sda8'
+
+package (install a package using operating systems underlying package manager)
+package 'apache2'
+
+remote_file (transfer a file from a remote location)
+remote_file '/tmp/bacon' do
+  source 'http://bacon.org/bits.tar.gz'
+end
+
+service (start, stop or restart a service)
+service 'apache2' do 
+  action :restart
+end
+
+template (manage plain-text file contents parsed as an embedded ruby template)
+template  'tmp/bacon' do
+  source 'bits.erb'
+end
+
+user  (create or manager a local user account)
+user 'bacon'
+
+
+Absolute paths are preffered over relative paths using Chef
+
+Use double quotes when u have a variable "#{<variable>}"
+
+We will use Test Kitchen to create a sandbox environemnt that emulates a prod environemnt. 
+
+To create a dir for chef kitchen
+$ mkdir kitchen
+$ cd kitchen
+
+$ kitchen init --create-gemfile
+$ bundle install
+
+kitchen-vagrant is a driver for Test Kitchen that adds support for manaaging VirtuablBox and VMware virtual machines using Vagrant. 
+das Test Kitchen is itself nothing more than a generic framework for managing evnironemnts and running tests.
+
+Dir Structure just created:
+.
+├── .kitchen
+│   └── logs
+│       └── kitchen.log
+├── .kitchen.yml
+├── Gemfile
+├── Gemfile.lock
+└── test
+    └── integration
+        └── default
+
+
+.kitchen.yml
+Used to configure virtual environments for Test Kitchen
+
+GemFile
+Bunder uses this file to configure the gem repo and the list of gems to download. Bunder will automatically determine a gem's dependencies by its references to other gems, so you need only list the top level gems you require
+
+Gemefile.lock
+Records all the versions of the gems Bundler downloaded for the current project, plus the versions of all dependencies. This file can be used by another Chef developer to reproduce your current gem environemnet using bundle install
+
+.kitchen/
+Hidden directory that Test Kitchen uses to store persistent data it needs to function properly
+
+.kitchen/logs/kitchen.log
+Text file that contains the output from the last run of Test Kitchen
+
+test/
+Directory structure that contains tests (initally just a skeleton structure with the subdirectory tree test/integration/default/)
+
+To spin up ur virtual machine u need to modify the kitchen.yml configuration file created by kitchen init
+
+Original kitchen.yml
+---
+driver:
+  name: vagrant
+
+provisioner:
+  name: chef_solo
+
+platforms:
+  - name: ubuntu-14.04
+  - name: centos-7.2
+
+suites:
+  - name: default
+    run_list:
+    attributes:
+
+To creat aliases for the box names we will be adding something like this to the kitchen.yml file:
+---
+driver:
+  name: vagrant
+
+provisioner:
+  name: chef_solo
+
+platforms:
+  - name: centos-7.2
+    box: chef-learning/centos-72
+    box_url: chef-learning/centos-72
+
+suites:
+  - name: default
+    run_list:
+    attributes:
+
+The change will tell Test Kitchen to download the CentOS image from VagrantCloud prepared.
+
+Will show u ur instances
+$ kitchen list
+
+To create an instance use the following:
+$ kitchen create default-centos65
+
+To verify everything is working fine use kitchen list
+
+Now you can login to the VM
+$ kitchen login default-centos72  note kitchen login works as well if only one VM
+
+Now you can destroy the VM
+$ kitchen destroy default-centos72 note kitchen destroy works as well if only one VM
+
+YAML Nots:
+mysql: {server_root_password: "rootpass", server_debian_password: "debpass"}
+is the same as 
+mysql:
+  server_root_password: "rootpass"
+  server_debian_password: "debpass"
+
+The --- denote that it's a YAML file
+
+kitchen.yaml file:
+driver:
+  Specifies the driver plugin to use, plus configuration parameters to manage Test Kitchen environments. You can get a list of drivers running the command kitchen driver discover. We're using the default driver ktichen-vagrant. By convention, the kitchen-part of the driver name is dropped when specfied in kitchen.yml
+provisioner:
+  Determines which configuration management tool will be used to provision the dirver's environment(s). We're using chef_solo. 
+platform:
+  A list of operating systems for which Test Kitchen will create instances
+suites:
+  In the case of Chef configuration management tool, specifies a configuration to be run on each instance. Among other things, a suite contains a list of recipes to run each on each instance.
+
+You can even link to s3 bucket in AWS for the AMI's
+platforms:
+- name: ubuntu-12.04
+  driver:
+    box: opscode-ubuntu-12.04
+    box_url: https://opscode-vm-bento.s3.amazonaws.com/vagrant/\
+             opscode_ubuntu-12.04_provisionerless.box
+- name: centos-6.4
+  driver:
+    box: opscode-centos-6.4
+    box_url: https://opscode-vm-bento.s3.amazonaws.com/vagrant/\
+             opscode_centos-6.4_provisionerless.box
+
+Test Kitchen Summary:
+kitchen init (Add Test Kitchen support to a project)
+
+kitchen list (Display information about Test Kitchen Instances)
+
+kitchen create (Start a Test Kitchen instance, if it's not already running)
+
+kitchen login (Log into an instance)
+
+kitchen destroy (Shut Down an instance and destroy the virtual machine)
+
+kitchen setup (Setup command will install chef-client for you. The kitchen setup command is used to run a provisioner)
+
+Some virtualbox commands for reference
+Lists runninv VMS
+$ VBoxManage list runningvms
+Power off virtual Machine
+$ VBoxManage controlvm <uid> poweroff
+Unregister VM 
+$ VBoxManage unregistervm <uid>
+
+Nodes:
+
+To setup a node is almost identicial to setting up a kitchen environment
+$ mkdir node
+$ cd node
+$ kitchen init --create-gemfile
+$ bundle install
+$ kitchen create default-centos72
+Now we need to have chef installed on the nodes
+$ kitchen setup default-centos72
+
+
+Chef plans on retiring chef solo mode and using chef-client local mode
+
+chef-client is urnning in local mode, it stimulates a full chef server instance in memory
+
+Ohai:
+When the Chef Client performs a Chef run, a sperarate command-line tool called ohai is used to collect system information.
+Ohai exposes this collection of node information to Chef as a set of automatic attributes. 
+
+Ohai collects a lot of information about the current state of the computer: networking configuration, CPU state, operating system type and version, memory consumption and much and much more.
+
+The info is accessible by node['ipaddress']
+node is an attribute variable
+
+node['virtualization']['system']
+
+log "IP Address: #{node['ipaddress']}"
+log "MAC Address: #{node['macaddress']}"
+log "OS Platform: #{node['platform']} #{node['platform_version']}"
+log "Running on a #{node['virtualization']['system']} \
+#{node['virtualization']['role']}"
+log "Hostname: #{node['hostname']}"
+
+Chef can manage things other than personal computers, such as network switches and embedded storage systems.
+
+Cookbooks:
+To generate a cookbook structure and directory with the name motd
+$ chef generate cookbook motd
+
+The cookbook generate command actually comes with a kitchen.yml file within it.
+
+In the cookbook u can apply a recipe in the recipes directory and than
+
+$ kitchen converge default-centos-73
+This will run Test Kitchen and which will run chef-client on the node. 
+
+Note: kitchen converage will run kitchen create and kitchen setup if they are needed
+
+login to validate ur results
+
+Steps involved in executing Chef run:
+1) Start the Chef Clietn:
+The chef-client process starts on the remote node. The process may be started by a service, cron job, or manually triggered by a user. The chef-client is a the process responsible for evaluating Chef cookbooks containing recipes with Chef code on the target node
+2) Build the node
+The chef-client process constructs the node object in memory. It runs ohai and gathers all the node's automatic attributes(such as hostname, fqdn, platform, users, etc)
+3) Synchronize
+A run list is sent to the node. The run list contains a list of recipes to executre on the targe node. A run list is the ordered, decomposed list of recipes to execute on the target node. The node may also be sent a list of URLs of cookbooks to download that are required by
+the run list. The target node will download and cache the required cookobooks in a local file cache.
+4) Load
+The cookboooks and Ruby compoanents are loaded in this step. Cookbook-level attributess are merged with the automatic attributes generaged by ohai in 2). The vaious componenets of a cookbook are loaded in this order:
+  - Libraries: all files in the libraries/folder from every cookbook are loaded so that any language extensions or alterations are available from remainder of the chef run
+  - Attributes: all files in the attributes/folder from every cookbook are loaded and merged with the automatic ohai attributes
+  - Definitions: all files in the definitions/folder from every cookbook are loaded because definitions create resources and must be loaded before recipes
+  - Resources: all files in the resources/folder from every cookbook are loaded because resources must be loaded before recipes
+  - Providers: all files in the providers/folder from every cookbook are loaded so the resources reference the proper provider
+  - Recipes: all the files in the recipes/folder from every cookbook are loaded and evaluated. At this point the recipes are not eecutred to place the node in desired config but Ruby code is executed and each resource is added to the resource collection
+5) Converege
+  The converege phase is the most critical phase of Chef run. This is when the Chef recipes are executed on the targe node - packages are installed, templates are writted, files are copied and so on
+6) Report
+  If Chef client run is performed sucessfully any new values in then ode object are saved; otherwise, an exception is raised without updated the node object. Then notification and exception handlers are executed. 
+
+A runlist is needed for cookboos:
+run list specifies recipes in the form of
+recipe['<cookbook_name>::<recipe_name>'] for exampe recipe['motd::default']
+defualt is implied so this is equivalent
+recipe['motd']
+
+In the case of Test Kitchen the run list is specified in the .kitchen.yml file and passed to the chef-client on the command line via the -o parameter. 
+Note: point number 3) A node may also be sent a list of URLs of cookbooks to download that are required by the run list.
+
+Cookbook Structure:
+To generate a cookbook
+chef generate cookbook
+
+cookbook
+├── .kitchen.yml
+├── README.md
+├── attributes
+│    └── default/
+├── chefignore
+├── files/
+│    └── default/
+├── metadata.rb
+├── recipes/
+│    └── default.rb
+└── templates/
+    └── default/
+
+\.kitchen.yml
+  The .kitchen.yml file is a YAML format configuration file for Test Kitchen. You can use the Test Kitchen to create sandbox environemnts to verify and validate your cookbook while you develop it
+README.md
+  Every cookbook should come with documentation. The README.md is a text file that contains doucmentation in markdown format
+attributes
+  You can provide your own custom attributes in a cookbook to complment (or overirde) the attributes gernated automatically by ohai. Attributes are commonly used to definie application distrubtion paths, platform-specific values, or software versions to install on a given node. The attributes/ directory can contain multiple .rb files with attributes definitions in them. when there is more than one attribute file, they are evaluated in alphabetical order. By convention, if it makes sense to store your attributes in one file, the file should be named default.rb
+chefignore
+  This file contains a list of files that should be ignored when uploading the cookbook to a ChefServer, when a Chef server is being used. By default, all files in a cookbook directory are uploaded to the Chef Server. There is no need, however, to upload things such as editor swapfiles or source control tracking files to a Chef Server. References to those files are commpnly placed in chefignore files so they won't be uploaded
+files
+  This files folder is a centralized store in the cookbook for files to be distrubuted to the nodes. Files can be plain text, images, zip files and so on. Theese files can be deployed to a target node using cookbook_file resource. A directory structure underneath files/ controls whether files are copied to particular nodes. When files should be distrubuted to all nodes they are expected to be in the files/default/ subdirectory.
+metadata.rb
+  The metadata.rb file contains all the information (metadata) about a cookbook. Every cookbook must have metadata.rb file contianing the name of the cookbook, version, dependencies, and other helpful infor
+recipes
+  The recipes folder contains Chef recipes. A recipe file contains Chef code. There can be multiple .rb recipe files in the recipes/folder. By convention the main recipe file is called default.rb. For each node, Chef evaluates only recipe files that are specified on the node's run list. The run list is specified in the .kitchen.yml file or on the chef-client command line or stored on a Chef Server.
+templates
+  The templates direcotry holds Chef Templates. The templates direcotry is similar to files in that it contains a set of files to be distrubuted to nodes. However, the files used are Embedded Ruby Templates. A template is plain text that can contains Ruby code, which is evaluated by The Embedded Ruby Template engine before being rendered on a node. Templates are useful when u want to generate files with a variable or selective content. Templates follows the same directory naming structure scheme as files to control whether the generated template files are copied to particular nodes.
+
+
+Four Resources you Need to know:
+package
+  Installs a package using the approropriate platfom-native installer/package manager (yum, apt, pacmacn, etc)
+service
+  Manages the lifecycle of any daemons/services installed by the package resources
+cookbook_file
+  Transfer a file from the cookbook repository to a path on the node. We introduced the cookbook_file resource earlier in this chapter to manage the /etc/motd file on our node
+template
+  A variant of the cookbook_file resource that lets you create file content from variables using Embedded Ruby Template
+
+Service action can either enable and start
+service ... do
+  action [:enable, :start]
+end
+
+The use of templating:
+
+template '/var/www/html/index.html' do
+  source 'index.html.erb'
+  mode   '0644'
+end
+
+The following code above will look for a template to apply to /var/www/html/index.html
+To create the template we do the below:
+$ chef generate template index.html
+
+In the index.html.erb file:
+This site was set up by <%= node['hostname'] %>
+
+Now if you login to the node and look at /var/www/html there will be a file there called index.html and it's contents will be This site was set up by default-centos-73
+
+To see the homepage in your webbrowser on your host:
+add driver network block to kitchen.yml
+
+---
+driver:
+  name: vagrant
+
+provisioner:
+  name: chef_zero
+
+platforms:
+  - name: centos65
+    driver:
+      network:
+      - ["private_network", {ip: "192.168.33.7"}]
+
+suites:
+  - name: default
+    run_list:
+      - recipe[apache::default]
+    attributes:
+
+Now navigate to 192.168.33.7 and u should see ur setup there
+
+- package (installs a package using the system package manager)
+- service (manage the lifecycle of dameon/service installed by the package resources)
+- cookbook_file (transfers a file from files folder of cookbook to a path on the node)
+- template (A variant of cookbook_file resource that lets u create file content from ERB templates.)
+
+Attributes:
+- Located in
+<cookbook>
+└── attributes
+    └── default.rb
+
+precedence attribute-name attribute-value
+default["apache"]["dir"] = "/etc/apache2"
+
+node.default["apache"]["dir"] = "/etc/apache2"
+
+The above statement declares it a node attribute
+
+Attributes can be defined multiple places and because of this all attribute values are composed together during a Chef run according to the priority levels.
+Highest Priority   Automatic (by Ohai)
+                   Defined in a Recipe
+Lowest priority    Defined in an Attribute File
+
+To generate an attribute:
+$ chef generate attribute default
+
+So if u overwrite a value in a Recipe that was in the Attribute file it'll show the value of the Recipe because of the priority
+
+Chef node might contain conflicting attribute assignments such as when u include other recipes and recipes from other cookbooks
+cookbook/recipes/default.rb
+include_recipe 'other'
+include_recipe 'yetanother'
+
+cookbook/recipes/other/rb
+include_recipe
+"othercookbook::another_recipe"
+
+To generate a recipe within a cookbook u can
+$ chef generate recipe message
+
+To include the recipe
+include_recipe 'motd-attributes::message'
+
+When there is a duplicate attribute value set at the same priority level, the last attribute value setting wins.
+
+Attribute Precedence:
+Automatic (attributes are those discovered by Ohai)
+Default (attributes are typically set in cookbooks and attribute files)
+Override (attributes are the strongest way to set an attribue - use sparingly)
+
+Debugging Attributes:
+node.debug_value() method
+
+Use case example:
+pp node.debug_value('motd-attributes', 'company')
+
+The Chef Server Architecture:
+Web Server
+  - The nginx web server is a simple reverse proxy server that acts as the front-end interface for Chef Server (ErChef). It also performs load balancing for Chef Server. All request to the Chef Server API are routed through the nginx web server
+WebUI
+  - The WebUI is the consumer-facing web application. It is a Ruby on Rails app that provides a web-guided user interface for interacting with Chef Server
+Chef Server
+  - Erchef is the componenent of the Chef Server that processes API requests. As its name suggests, Chef Server is written in Erlang for high concurrency and reliability. Even though Chef Server is written in Erlang, it is still capable of running Ruby code. In fact, writing Erlang Chef recipes is not supported at this writing. Erchef is the core API for Chef Server
+Bookshelf
+  - The bookshelf is the central sotre for all Chef cookbooks and cookbook content (such as files, tmeplates, definitions, metadata and recipes). Each cookbook is automatically checksummed and versioned. Bookshelf is a flat-file database and is intentionally sotred outside of Chef Server's index.
+Serach Index
+  - The Search Index is an Apache Solr server that handles the indexing and searching mechanism for various API calls, both internally and externally. The server is wrapped by chef-solr whcih exposes RESTful API
+Message Queues
+  - The queues handle all messages that sent to the serach Index for parsing. The quues are managed by RabbitMQ, an opensource queuing system. chef-expander pulls messages from the message queues, formats the messages, and then sends the messages to the Search Index
+Database
+  - The database is a PostgreSQL persistent data sotre. 
+
+Testing:
+Foodcritic is a chef linter
+ChefSpec helps document and organize your code
+
+No need to do the following:
+Serverspec verifies that a cookbook behaves as intended
+
+The chef dk already has the following installed so no need for it
+$ sudo gem install foodcritic --no-ri --no-rdoc
+$ sudo gem install chefspec --no-ri --no-rdoc
+
+There needs to be a file named test/integration which matches the suite name
+<cookbook_root>
+└── test
+    └── integration
+        └── <suite_name>
+
+U can find the suite_name in the kitchen.yml file under suites
+
+Make directory for the serverspec tests
+mkdir -p integration/default
+mkdir -p test/integration/default/serverspec
+
+
+In the directory serverspec create a file called default_spec.rb
+
+
+In order to run the tests:
+$ kitchen setup
+This will setup the the plugins required for testing in a sandbox instance by the <plugin> dir name
+
+Once the appropriate libaries are setup u can run the tests by
+$ kitchen verify
+
+Comman testing practices:
+describe 'web site' do
+  <tests here>
+end
+
+describe '<entity>' do
+  it '<description>'
+    <examples here>
+  end
+end
+
+describe 'web site' do
+  it 'responds on port 80' do
+    ...
+  end
+end
+
+describe '<entity>' do
+  it '<description>'
+    expect(resource).to matcher matcher_parameter
+  end
+end
+
+So essentially we use kitchen setup to make sure the node has the required setup installed
+$ kitchen setup
+And than we use kitchen verify to make sure the test cases implied are working as epected
+$ kitchen verify
+
+U can also use kitchen test command which will run the following commands in sequence:
+1) kitchen destroy (if necessary)
+2) kitchen create
+3) kitchen converge
+4) kitchen setup
+5) kitchen verify
+6) kitchen destroy
+
+For linter at the root of the cookbook we use
+$ foodcritic .
+
+And this will tell us what is all that is wrong with our chef cookbook
+
+Another tool called chefspec helps write out the specifications before even testing
+The specifications are in the folder spec/unit/recipes/default_spec.rb
+These have the specifications in them For example
+
+require 'spec_helper'
+
+at_exit { ChefSpec::Coverage.report! }
+
+describe 'apache-test::default' do
+  let(:chef_run) {ChefSpec::Runner.new.converge('apache-test::default') }
+
+  it 'installs apache2' do
+    expect(chef_run).to install_package('httpd')
+  end
+end
+
+This will test for installation of apache2
+
+To run the specifications we need to:
+$ rspec --color
+the color param adds good color to it
+
+The at_exit { ChefSpec::Coverage.report! } will publish a report for u at the end
+
+To inspect your cookbook styling guide and other things we use cookstyle command
+$ cookstyle your-cookbook
