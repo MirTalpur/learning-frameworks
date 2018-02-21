@@ -1,0 +1,29 @@
+save: This saves the dependency in the dependencies section. It is available through all the development life cycle.
+save-dev: This saves the dependency in the devDependencies section. It is only available in development and does not get deployed into production.
+save-optional: This adds a dependency (such as save), but lets npm continue if the dependency can't be found. It is up to the app to handle the lack of this dependency.
+
+npm install –g pm2
+The –g flags instruct npm to globally install PM2, so it is available in the system, not in the app. 
+This means that when the previous command finishes, pm2 is available as a command in the console.
+If you run pm2 help in a terminal, you can see the help of PM2.
+
+JavaScript treats functions as first-level objects so that they can be passed as other functions arguments
+as a parameter that, in the Node.js world, is called callback
+
+the createServer() method accepts a callback that will be executed in the event of an HTTP request, 
+but meanwhile, the thread is free to keep executing other actions.
+
+The catch in this model is what Node.js developers call the callback hell. The code gets complicated 
+as every single action that is a response to a blocking action has to be processed on a callback, 
+like in the previous example; the function used as a parameter to the createServer() method is a 
+good example.
+
+SOLID Design principles:
+Single responsibility principle
+Open for extension, closed for modification
+Liskov substitution
+Interface segregation
+Dependency inversion (inversion of control and dependency injection)
+
+module.exports variable exports the modules to the outside world
+
