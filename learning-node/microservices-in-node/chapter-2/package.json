@@ -10,6 +10,8 @@
   "author": "Mir Ali Talpur",
   "license": "ISC",
   "dependencies": {
-    "seneca": "^3.4.3"
+    "express": "^4.16.2",
+    "seneca": "^3.4.3",
+    "seneca-web": "^2.2.0"
   }
 }

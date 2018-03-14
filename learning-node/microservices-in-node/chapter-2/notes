@@ -27,3 +27,92 @@ Dependency inversion (inversion of control and dependency injection)
 
 module.exports variable exports the modules to the outside world
 
+Will be using Seneca (for building application) and PM2 (for running them)but the alternatives are 
+also good as well such as restify or Express to build applications in Node and forever and 
+nodemon to run them.
+
+Every node app comes with a package.json. The file describes the configuration of the project.
+
+You want your code to be organized in modules. A module is an aggregation of code that does something
+simple, such as manipulating strings and does it well. The more functions (or classes, utilities, so on)
+your module contains the less cohesive it is, we are trying to avoid that.
+
+
+Seneca is a framework for building microservices. Seneca is about simplicity, it connects services through
+a sophisicated pattern-matching interface that abstracts the transport from the code so that it is fairly
+easy to write high scalable software
+
+Seneca comes as a module, so the first thing that needs to be done is to require() it. Senca package
+is wrapped in a function, so invoking the function initalizes the library.
+
+seneca.add() instructs seneca to add a function that will be invoked with a set of patterns. For example
+the first one we specify an action that will take place when seneca recieves the {role: math, cmd: sum}
+command. For the second one the pattern is {role: math, cmd: product}
+
+The last line sends a command to Seneca that will be executed by the service that match the pattern passed
+as the first parameter. In this case, it will match the first service as role and cmd match. The second 
+call to act will match the second service.
+
+seneca.act() instructs Senca to act on certain things.
+
+Callbacks are a way of indicating to the program that something has happened, without being blocked until
+the result is ready to be processed.
+
+Inversion control can be defined as a technique to delegate the creation or call of components and methods
+so that your module does not need to know how to build the dependencies, which usually are built through
+dependency injection.
+
+For enterprise software's point of view, we can differentiate two components here: a producer
+Seneca.add() and a consumer Seneca.act()
+
+Pattern matching is one of the most flexible software patterns that you can use for microservices.
+As opposed to network addresses or messages, patterns are fairly easy to extend. 
+
+Patrun is used by Senca in order to execute the pattern matching and decide which service should 
+respond to the call
+
+Patrun uses a closest match approach to resolve the calls. 
+pattern:
+{x:1    } -> A
+{x:1, y:1} -> B
+{x:1, y:2} -> C
+
+input:
+{x: 1} -> A
+{x:2} -> No match
+{x:1, y:1} -> B also matches A but B is a better match
+{x:1, y:2} -> C also matches with A but C is a better match
+{y:1} -> No match
+
+Patrun always tries to match the closest and most concrete pattern that it can find with the 
+following two dimensions:
+The longest chain of matches
+The order of the pattern
+
+If there is any ambiguity it will match the first pattern found.
+
+In Seneca a plugin is loaded at startup but we don't see it because debug log level is INFO
+
+node minimal-plugin.js -seneca.log.all
+
+node minimal-plugin.js -seneca.log.all | grep plugin | grep DEFINE
+
+basic: The plugin is included with the main Seneca module and prodives a small set of basic
+utility action patterns
+
+transport: This is the transport plugin. Up until now, we have only executed different services
+(quite small and concise) on the same machine, but what if we want to distribute them? The plugin
+will help us and we will see how to do so
+
+web: Seneca uses TCP by default, but creating a RESTful API can be tricky. This plugin helps to
+do it
+
+mem-store: Seneca comes with a data abstraction layer so that we can handle the data storage in
+different places. Mongo, SQL databases and so on. Out of the box Seneca provides an in-memory
+storage so it just works
+
+minimal_plugin: This our plugin. 
+
+Express was built under the principle of API composition. Every piece of software in Express is
+called middleware, and they are chained in the code in order to process every request.
+
