@@ -1,9 +1,18 @@
 class V1::SessionsController < ApplicationController
+  def show
+    current_user ? head(:ok) : head(:unauthorized)
+  end
+
   def create
     user = User.where(email: params[:email]).first
 
     if user && user.valid_password?(params[:password])
-      render :create, status: :created
+      jwt = JWT.encode(
+        { user_id: @user.id, exp: (Time.now + 2.weeks).to_i },
+        Rails.application.secrets.secret_key_base,
+        'HS256'
+      )
+      render :create, locals: { token: jwt }, status: :created
     else
       head(:unauthorized)
     end
