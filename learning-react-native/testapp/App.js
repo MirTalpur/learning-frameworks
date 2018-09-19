@@ -1,30 +1,87 @@
-/**
- * Sample React Native App
- * https://github.com/facebook/react-native
- *
- * @format
- * @flow
- */
+import React from 'react';
+import { StyleSheet, Text, View } from 'react-native';
+import * as firebase from 'firebase';
+import { Container, Content, Header, Form, Input, Item, Button, Label} from 'native-base';
+// init firebase
+const firebaseConfig = {
+  apiKey: "",
+  authDomain: "",
+  databaseURL: "",
+  storageBucket: "",
+  projectId: "",
+  messagingSenderId: ""
+};
 
-import React, {Component} from 'react';
-import {Platform, StyleSheet, Text, View} from 'react-native';
+firebase.initializeApp(firebaseConfig);
+export default class App extends React.Component {
+  constructor(props) {
+    super(props)
+    this.state = ({
+      email: '',
+      password: ''
+    })
+  }
 
-const instructions = Platform.select({
-  ios: 'Press Cmd+R to reload,\n' + 'Cmd+D or shake for dev menu',
-  android:
-    'Double tap R on your keyboard to reload,\n' +
-    'Shake or press menu button for dev menu',
-});
+  signUpUser = (email, password) => {
+    try {
+      if(this.state.password.length < 6) {
+        alert("Please enter at least 6 characters");
+        return;
+      }
+      firebase.auth().createUserWithEmailAndPassword(email, password);
+    } catch(errror){
+      console.log(errror.toString());
+    }
+  }
 
-type Props = {};
-export default class App extends Component<Props> {
+  loginUser = (email, password) => {
+    try {
+      firebase.auth().signInWithEmailAndPassword(email, password).then(function (user) {
+        console.log(user);
+      });
+    } catch(errror){
+      console.log(errror.toString());
+    }
+  }
   render() {
     return (
-      <View style={styles.container}>
-        <Text style={styles.welcome}>Welcome to React Native!</Text>
-        <Text style={styles.instructions}>To get started, edit App.js</Text>
-        <Text style={styles.instructions}>{instructions}</Text>
-      </View>
+      <Container style = {styles.container}>
+        <Form>
+          <Item floatingLabel>
+            <Label>Email</Label>
+            <Input
+              autoCorrect = {false}
+              autoCapitalize = "none"
+              onChangeText = {(email) => this.setState({ email })}
+            />
+          </Item>
+          <Item floatingLabel>
+            <Label>Password</Label>
+            <Input
+              secureTextEntry = {true}
+              autoCorrect = {false}
+              autoCapitalize = "none"
+              onChangeText = {(password) => this.setState({ password })}
+            />
+          </Item>
+          <Button style = { { marginTop: 10 }}
+            full
+            rounded
+            success
+            onPress = {() => this.loginUser(this.state.email, this.state.password)}
+          >
+            <Text style = { {color: 'white' } }>Login</Text>
+          </Button>
+          <Button style = { { marginTop: 10 }}
+            full
+            rounded
+            primary
+            onPress = {() => this.signUpUser(this.state.email, this.state.password)}
+          >
+            <Text style = { {color: 'white' } }>Sign Up</Text>
+          </Button>
+        </Form>
+      </Container>
     );
   }
 }
@@ -32,18 +89,8 @@ export default class App extends Component<Props> {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: '#fff',
     justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#F5FCFF',
-  },
-  welcome: {
-    fontSize: 20,
-    textAlign: 'center',
-    margin: 10,
-  },
-  instructions: {
-    textAlign: 'center',
-    color: '#333333',
-    marginBottom: 5,
+    padding: 10
   },
 });
